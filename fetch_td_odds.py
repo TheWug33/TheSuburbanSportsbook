@@ -86,48 +86,71 @@ def get_event_td_odds(event_id):
 
 def build_notes():
     """
-    Returns {player_display_name: note_string} combining two real signals:
+    Returns {player_display_name: note_string}.
+
+    When this season has games played (Week 2+), uses real signals from
+    those games:
       1. The player's share of their team's touches (carries + targets).
       2. How many TDs the opponent they're about to face has allowed,
          framed as a league rank (1 = worst defense = best matchup).
 
-    Both are computed from this season's played games (weeks < WEEK).
-    Week 1 has none yet, so in that case we fall back to last season's
-    final stretch as a proxy — real stats, just a year old, and the
-    note says so rather than pretending it's current. This is a rough
-    stand-in only: offseason trades/injuries mean a player's last-season
-    role isn't guaranteed to carry over.
+    Week 1 has no current-season games to draw on. Rather than guess a
+    player's team from last year's roster (unreliable after trades/
+    signings), we instead pull this season's actual roster to find each
+    player's real current team, join that against this week's real
+    schedule to find their opponent, and rate that opponent using last
+    season's full-year defensive TDs-allowed. That's a matchup-only
+    note — no stale offensive stats — which is the more defensible use
+    of last year's data for a week with zero current-season sample.
 
     Wrapped defensively: nflreadpy/polars internals occasionally raise
-    version-mismatch errors, and the schedule join depends on TEAM_ABBR
-    matching nflreadpy's own codes. If anything here fails, we skip
-    notes for this run rather than crash the whole odds fetch.
+    version-mismatch errors, and both the roster and schedule joins
+    depend on TEAM_ABBR matching nflreadpy's own codes, and on
+    `load_rosters` being the right function/column names for this
+    nflreadpy version (unverified against a live pull). If anything
+    here fails, we skip notes for this run rather than crash the whole
+    odds fetch.
     """
     try:
         current = nfl.load_player_stats(seasons=[SEASON])
         played = current[current["week"] < WEEK]
 
-        using_prior_season = played.empty
-        if using_prior_season:
-            prior = nfl.load_player_stats(seasons=[SEASON - 1])
-            cutoff = prior["week"].max() - LOOKBACK_GAMES + 1
-            played = prior[prior["week"] >= cutoff].copy()
-            touch_label = f"{SEASON - 1} finish"
-            matchup_suffix = f" ({SEASON - 1} season)"
-        else:
-            touch_label = f"last {LOOKBACK_GAMES} gm"
-            matchup_suffix = ""
+        schedule = nfl.load_schedules(seasons=[SEASON])
+        week_games = schedule[schedule["week"] == WEEK]
+        opponent_of = {}
+        for _, g in week_games.iterrows():
+            opponent_of[g["home_team"]] = g["away_team"]
+            opponent_of[g["away_team"]] = g["home_team"]
 
-        # --- touch share per player ---
+        if played.empty:
+            # Week 1: current roster (up to date) + last season's full-year
+            # defense — matchup context only, no stale usage stats.
+            rosters = nfl.load_rosters(seasons=[SEASON])
+            player_team = dict(zip(rosters["player_display_name"], rosters["team"]))
+
+            prior = nfl.load_player_stats(seasons=[SEASON - 1])
+            prior = prior.copy()
+            prior["tds_against"] = prior["rushing_tds"].fillna(0) + prior["receiving_tds"].fillna(0)
+            allowed = prior.groupby("opponent_team")["tds_against"].sum().sort_values(ascending=False)
+            allowed_rank = {team: i + 1 for i, team in enumerate(allowed.index)}
+            n_teams = len(allowed_rank)
+
+            matchup_notes = {}
+            for player, team in player_team.items():
+                opp = opponent_of.get(team)
+                rank = allowed_rank.get(opp)
+                if opp and rank:
+                    matchup_notes[player] = (
+                        f"{opp} ranked {rank}/{n_teams} in TDs allowed last season"
+                    )
+            return {}, matchup_notes
+
+        # Week 2+: real signals from this season so far.
         touch_notes = {}
         for team in played["team"].unique():
             team_games = played[played["team"] == team]
-            if using_prior_season:
-                recent = team_games
-            else:
-                recent_weeks = sorted(team_games["week"].unique())[-LOOKBACK_GAMES:]
-                recent = team_games[team_games["week"].isin(recent_weeks)]
-            recent = recent.copy()
+            recent_weeks = sorted(team_games["week"].unique())[-LOOKBACK_GAMES:]
+            recent = team_games[team_games["week"].isin(recent_weeks)].copy()
             recent["touches"] = recent["carries"].fillna(0) + recent["targets"].fillna(0)
             team_touches = recent["touches"].sum()
             if team_touches == 0:
@@ -137,21 +160,14 @@ def build_notes():
                 if touches == 0:
                     continue
                 share = round(100 * touches / team_touches)
-                touch_notes[player] = f"{share}% share of {team}'s touches ({touch_label})"
+                n = len(recent_weeks)
+                touch_notes[player] = f"{share}% share of {team}'s touches (last {n} gm)"
 
-        # --- defensive TDs allowed per team, ranked ---
+        played = played.copy()
         played["tds_against"] = played["rushing_tds"].fillna(0) + played["receiving_tds"].fillna(0)
         allowed = played.groupby("opponent_team")["tds_against"].sum().sort_values(ascending=False)
         allowed_rank = {team: i + 1 for i, team in enumerate(allowed.index)}
         n_teams = len(allowed_rank)
-
-        # --- this week's schedule (current season), to find opponents ---
-        schedule = nfl.load_schedules(seasons=[SEASON])
-        week_games = schedule[schedule["week"] == WEEK]
-        opponent_of = {}
-        for _, g in week_games.iterrows():
-            opponent_of[g["home_team"]] = g["away_team"]
-            opponent_of[g["away_team"]] = g["home_team"]
 
         player_team = (
             played.sort_values("week")
@@ -165,7 +181,7 @@ def build_notes():
             opp = opponent_of.get(team)
             rank = allowed_rank.get(opp)
             if opp and rank:
-                matchup_notes[player] = f"{opp} ranks {rank}/{n_teams} in TDs allowed{matchup_suffix}"
+                matchup_notes[player] = f"{opp} ranks {rank}/{n_teams} in TDs allowed"
 
         return touch_notes, matchup_notes
     except Exception as e:
