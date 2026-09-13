@@ -417,9 +417,10 @@ body {
 .season-grid th,
 .season-grid td {
   border: 1px solid var(--paper-line);
-  padding: 6px 8px;
+  padding: 6px 10px;
   text-align: center;
   white-space: nowrap;
+  min-width: 62px;
 }
 
 .season-grid th {
