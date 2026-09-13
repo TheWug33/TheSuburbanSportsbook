@@ -70,35 +70,44 @@ def build_touch_share_notes():
     Returns {player_display_name: note_string} using real weekly stats:
     each player's (carries + targets) as a share of their team's total
     over their last LOOKBACK_GAMES played games this season so far.
+
+    Wrapped defensively: nflreadpy/polars internals occasionally raise
+    version-mismatch errors depending on what's installed. If that
+    happens, we skip real notes for this run rather than crash the
+    whole odds fetch — the odds themselves are the important part.
     """
-    weekly = nfl.load_player_stats(seasons=[SEASON])
-    played = weekly[weekly["week"] < WEEK]
-    if played.empty:
-        return {}
+    try:
+        weekly = nfl.load_player_stats(seasons=[SEASON])
+        played = weekly[weekly["week"] < WEEK]
+        if played.empty:
+            return {}
 
-    notes = {}
-    for team in played["team"].unique():
-        team_games = played[played["team"] == team]
-        recent_weeks = sorted(team_games["week"].unique())[-LOOKBACK_GAMES:]
-        recent = team_games[team_games["week"].isin(recent_weeks)]
+        notes = {}
+        for team in played["team"].unique():
+            team_games = played[played["team"] == team]
+            recent_weeks = sorted(team_games["week"].unique())[-LOOKBACK_GAMES:]
+            recent = team_games[team_games["week"].isin(recent_weeks)]
 
-        recent = recent.copy()
-        recent["touches"] = recent["carries"].fillna(0) + recent["targets"].fillna(0)
-        team_touches = recent["touches"].sum()
-        if team_touches == 0:
-            continue
-
-        by_player = recent.groupby("player_display_name")["touches"].sum()
-        for player, touches in by_player.items():
-            if touches == 0:
+            recent = recent.copy()
+            recent["touches"] = recent["carries"].fillna(0) + recent["targets"].fillna(0)
+            team_touches = recent["touches"].sum()
+            if team_touches == 0:
                 continue
-            share = round(100 * touches / team_touches)
-            n_games = len(recent_weeks)
-            notes[player] = (
-                f"{share}% share of {team}'s touches over last {n_games} game"
-                f"{'s' if n_games != 1 else ''}"
-            )
-    return notes
+
+            by_player = recent.groupby("player_display_name")["touches"].sum()
+            for player, touches in by_player.items():
+                if touches == 0:
+                    continue
+                share = round(100 * touches / team_touches)
+                n_games = len(recent_weeks)
+                notes[player] = (
+                    f"{share}% share of {team}'s touches over last {n_games} game"
+                    f"{'s' if n_games != 1 else ''}"
+                )
+        return notes
+    except Exception as e:
+        print(f"Note generation skipped this run (stats library error): {e}")
+        return {}
 
 
 def main():
