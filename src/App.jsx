@@ -46,6 +46,22 @@ const TABS = [
   { id: "season", label: "Season Grid" },
 ];
 
+const BOARD_LIMIT = 15;
+
+function normalizeOdds(rows) {
+  // DB rows already store a descriptive matchup string in `opp`
+  // (e.g. "Buffalo Bills @ Houston Texans"). Fallback rows instead
+  // have separate team/opp fields — combine those into the same shape.
+  const normalized = rows.map((o) => ({
+    player: o.player,
+    matchup: o.team ? `${o.team} vs ${o.opp}` : o.opp,
+    odds: o.odds,
+    note: o.note,
+  }));
+  normalized.sort((a, b) => parseInt(a.odds, 10) - parseInt(b.odds, 10));
+  return normalized.slice(0, BOARD_LIMIT);
+}
+
 function ResultBadge({ result }) {
   return <span className={`badge badge-${result}`}>{result}</span>;
 }
@@ -73,14 +89,13 @@ export default function App() {
     const { data, error: err } = await supabase
       .from("td_odds")
       .select("*")
-      .eq("week", w)
-      .order("odds", { ascending: true });
+      .eq("week", w);
     if (err) {
       setError(err.message);
-      setWeekOdds(FALLBACK_ODDS);
+      setWeekOdds(normalizeOdds(FALLBACK_ODDS));
       return;
     }
-    setWeekOdds(data && data.length ? data : FALLBACK_ODDS);
+    setWeekOdds(normalizeOdds(data && data.length ? data : FALLBACK_ODDS));
   }, []);
 
   useEffect(() => {
@@ -248,7 +263,9 @@ export default function App() {
 
       {activeTab === "board" && (
         <section className="board">
-          <p className="board-caption">Shortest odds to longest — Week {week}</p>
+          <p className="board-caption">
+            Top {BOARD_LIMIT}, shortest odds to longest — Week {week}
+          </p>
           {weekOdds.length === 0 ? (
             <p className="empty">No odds loaded for this week yet.</p>
           ) : (
@@ -256,18 +273,16 @@ export default function App() {
               <thead>
                 <tr>
                   <th>Player</th>
-                  <th>Team</th>
-                  <th>Opp</th>
+                  <th>Matchup</th>
                   <th>Odds</th>
-                  <th>Matchup Note</th>
+                  <th>Note</th>
                 </tr>
               </thead>
               <tbody>
                 {weekOdds.map((o) => (
                   <tr key={o.player}>
                     <td>{o.player}</td>
-                    <td>{o.team}</td>
-                    <td>{o.opp}</td>
+                    <td className="matchup-cell">{o.matchup}</td>
                     <td className="odds-cell">{o.odds}</td>
                     <td className="note-cell">{o.note}</td>
                   </tr>

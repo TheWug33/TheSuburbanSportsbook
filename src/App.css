@@ -278,6 +278,13 @@ body {
 .odds-cell {
   font-weight: 700;
   color: var(--field-deep);
+  white-space: nowrap;
+}
+
+.matchup-cell {
+  font-size: 13px;
+  color: var(--pending);
+  white-space: nowrap;
 }
 
 .note-cell {
