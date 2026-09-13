@@ -179,7 +179,13 @@ body {
   padding: 9px 10px;
 }
 
+.slip-buttons {
+  display: flex;
+  gap: 10px;
+}
+
 .lock-btn {
+  flex: 2;
   font-family: "Oswald", sans-serif;
   font-weight: 600;
   font-size: 15px;
@@ -189,6 +195,20 @@ body {
   border: none;
   border-radius: 4px;
   padding: 12px;
+  cursor: pointer;
+}
+
+.clear-btn {
+  flex: 1;
+  font-family: "Oswald", sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  background: transparent;
+  color: var(--miss);
+  border: 2px solid var(--miss);
+  border-radius: 4px;
+  padding: 10px;
   cursor: pointer;
 }
 

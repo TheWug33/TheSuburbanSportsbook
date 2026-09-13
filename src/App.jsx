@@ -108,6 +108,20 @@ export default function App() {
     loadPicks();
   }
 
+  async function clearPick() {
+    const { error: err } = await supabase
+      .from("picks")
+      .delete()
+      .eq("week", week)
+      .eq("person", name);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    setPlayer("");
+    loadPicks();
+  }
+
   return (
     <div className="page">
       <header className="masthead">
@@ -173,9 +187,21 @@ export default function App() {
                 ))}
               </datalist>
             </label>
-            <button type="submit" className="lock-btn" disabled={loading}>
-              {alreadyPicked ? "Change Pick" : "Lock In Pick"}
-            </button>
+            <div className="slip-buttons">
+              <button type="submit" className="lock-btn" disabled={loading}>
+                {alreadyPicked ? "Change Pick" : "Lock In Pick"}
+              </button>
+              {alreadyPicked && (
+                <button
+                  type="button"
+                  className="clear-btn"
+                  onClick={clearPick}
+                  disabled={loading}
+                >
+                  Clear Pick
+                </button>
+              )}
+            </div>
             {alreadyPicked && (
               <p className="slip-note">Currently locked: {alreadyPicked.player}</p>
             )}
