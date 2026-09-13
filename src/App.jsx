@@ -269,26 +269,18 @@ export default function App() {
           {weekOdds.length === 0 ? (
             <p className="empty">No odds loaded for this week yet.</p>
           ) : (
-            <table className="ledger ledger-board">
-              <thead>
-                <tr>
-                  <th>Player</th>
-                  <th>Matchup</th>
-                  <th>Odds</th>
-                  <th>Note</th>
-                </tr>
-              </thead>
-              <tbody>
-                {weekOdds.map((o) => (
-                  <tr key={o.player}>
-                    <td>{o.player}</td>
-                    <td className="matchup-cell">{o.matchup}</td>
-                    <td className="odds-cell">{o.odds}</td>
-                    <td className="note-cell">{o.note}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="board-list">
+              {weekOdds.map((o) => (
+                <div className="board-row" key={o.player}>
+                  <div className="board-row-top">
+                    <span className="board-player">{o.player}</span>
+                    <span className="odds-cell">{o.odds}</span>
+                  </div>
+                  <div className="board-matchup">{o.matchup}</div>
+                  <div className="board-note">{o.note}</div>
+                </div>
+              ))}
+            </div>
           )}
         </section>
       )}
