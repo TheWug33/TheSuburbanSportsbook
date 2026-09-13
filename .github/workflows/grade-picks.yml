@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install nflreadpy supabase
+      - run: pip install nflreadpy supabase pyarrow pandas
       - run: python grade_picks.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
