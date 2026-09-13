@@ -23,7 +23,21 @@ const FALLBACK_ODDS = [
   { player: "Bijan Robinson", team: "ATL", opp: "CAR", odds: "-142", note: "Bottom-5 run defense, goal-line back" },
   { player: "Ja'Marr Chase", team: "CIN", opp: "MIN", odds: "-125", note: "Target share over 30% last 3 games" },
   { player: "Jonathan Taylor", team: "IND", opp: "TEN", odds: "-118", note: "Heavy volume, soft front seven" },
+  { player: "Derrick Henry", team: "BAL", opp: "CLE", odds: "-110", note: "Bell-cow role inside the 5" },
+  { player: "Saquon Barkley", team: "PHI", opp: "NYG", odds: "-105", note: "Elite offensive line, division foe" },
+  { player: "Josh Jacobs", team: "GB", opp: "CHI", odds: "+100", note: "Goal-line back on a run-heavy team" },
   { player: "Puka Nacua", team: "LAR", opp: "IND", odds: "+105", note: "Slot matchup vs injured CB2" },
+  { player: "De'Von Achane", team: "MIA", opp: "NYJ", odds: "+110", note: "Pass-catching role, negative game script likely" },
+  { player: "Brock Bowers", team: "LV", opp: "WAS", odds: "+120", note: "Red-zone target leader at TE" },
+  { player: "Amon-Ra St. Brown", team: "DET", opp: "GB", odds: "+125", note: "Highest red-zone snap share on the team" },
+  { player: "Rashee Rice", team: "KC", opp: "NYG", odds: "+135", note: "Return from suspension, expanded role" },
+  { player: "James Cook", team: "BUF", opp: "MIA", odds: "+140", note: "Short-yardage work trending up" },
+  { player: "Tony Pollard", team: "TEN", opp: "IND", odds: "+145", note: "Early-down work, goal-line vulture risk" },
+  { player: "George Kittle", team: "SF", opp: "SEA", odds: "+150", note: "Frequent red-zone target when healthy" },
+  { player: "Chase Brown", team: "CIN", opp: "MIN", odds: "+155", note: "Shares backfield, but scores in short yardage" },
+  { player: "Courtland Sutton", team: "DEN", opp: "LAC", odds: "+165", note: "Size mismatch in the red zone" },
+  { player: "Trey McBride", team: "ARI", opp: "SF", odds: "+170", note: "Featured in two-TE red-zone sets" },
+  { player: "Jaylen Warren", team: "PIT", opp: "BAL", odds: "+180", note: "Change-of-pace back, mixed goal-line usage" },
 ];
 
 const TABS = [
