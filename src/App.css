@@ -218,6 +218,12 @@ body {
   margin: -6px 0 4px;
 }
 
+.typo-warning {
+  font-size: 12px;
+  color: var(--miss);
+  margin: -6px 0 4px;
+}
+
 .ledger {
   width: 100%;
   border-collapse: collapse;

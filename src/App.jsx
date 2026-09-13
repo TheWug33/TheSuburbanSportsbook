@@ -56,7 +56,7 @@ function normalizeOdds(rows) {
     player: o.player,
     matchup: o.team ? `${o.team} vs ${o.opp}` : o.opp,
     odds: o.odds,
-    note: o.note,
+    note: o.manual_note || o.note,
   }));
   normalized.sort((a, b) => parseInt(a.odds, 10) - parseInt(b.odds, 10));
   return normalized.slice(0, BOARD_LIMIT);
@@ -71,6 +71,7 @@ export default function App() {
   const [week, setWeek] = useState(1);
   const [picks, setPicks] = useState([]);
   const [weekOdds, setWeekOdds] = useState([]);
+  const [allPlayerNames, setAllPlayerNames] = useState([]);
   const [name, setName] = useState(PEOPLE[0]);
   const [player, setPlayer] = useState("");
   const [loading, setLoading] = useState(false);
@@ -93,9 +94,12 @@ export default function App() {
     if (err) {
       setError(err.message);
       setWeekOdds(normalizeOdds(FALLBACK_ODDS));
+      setAllPlayerNames(FALLBACK_ODDS.map((o) => o.player));
       return;
     }
-    setWeekOdds(normalizeOdds(data && data.length ? data : FALLBACK_ODDS));
+    const rows = data && data.length ? data : FALLBACK_ODDS;
+    setWeekOdds(normalizeOdds(rows));
+    setAllPlayerNames([...new Set(rows.map((o) => o.player))].sort());
   }, []);
 
   useEffect(() => {
@@ -211,10 +215,18 @@ export default function App() {
                 placeholder="Start typing a player..."
               />
               <datalist id="player-suggestions">
-                {weekOdds.map((o) => (
-                  <option key={o.player} value={o.player} />
+                {allPlayerNames.map((p) => (
+                  <option key={p} value={p} />
                 ))}
               </datalist>
+              {player.trim() &&
+                !allPlayerNames.some(
+                  (p) => p.toLowerCase() === player.trim().toLowerCase()
+                ) && (
+                  <p className="typo-warning">
+                    Not an exact match to a listed player — check spelling so it grades correctly
+                  </p>
+                )}
             </label>
             <div className="slip-buttons">
               <button type="submit" className="lock-btn" disabled={loading}>
