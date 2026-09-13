@@ -112,10 +112,10 @@ def build_notes():
     odds fetch.
     """
     try:
-        current = nfl.load_player_stats(seasons=[SEASON])
+        current = nfl.load_player_stats(seasons=[SEASON]).to_pandas()
         played = current[current["week"] < WEEK]
 
-        schedule = nfl.load_schedules(seasons=[SEASON])
+        schedule = nfl.load_schedules(seasons=[SEASON]).to_pandas()
         week_games = schedule[schedule["week"] == WEEK]
         opponent_of = {}
         for _, g in week_games.iterrows():
@@ -125,10 +125,10 @@ def build_notes():
         if played.empty:
             # Week 1: current roster (up to date) + last season's full-year
             # defense — matchup context only, no stale usage stats.
-            rosters = nfl.load_rosters(seasons=[SEASON])
+            rosters = nfl.load_rosters(seasons=[SEASON]).to_pandas()
             player_team = dict(zip(rosters["player_display_name"], rosters["team"]))
 
-            prior = nfl.load_player_stats(seasons=[SEASON - 1])
+            prior = nfl.load_player_stats(seasons=[SEASON - 1]).to_pandas()
             prior = prior.copy()
             prior["tds_against"] = prior["rushing_tds"].fillna(0) + prior["receiving_tds"].fillna(0)
             allowed = prior.groupby("opponent_team")["tds_against"].sum().sort_values(ascending=False)

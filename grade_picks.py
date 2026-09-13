@@ -39,7 +39,7 @@ def normalize(name):
 
 
 def get_td_scorers():
-    weekly = nfl.load_player_stats(seasons=[SEASON])
+    weekly = nfl.load_player_stats(seasons=[SEASON]).to_pandas()
     weekly = weekly[weekly["week"] == WEEK]
     tds = weekly["rushing_tds"].fillna(0) + weekly["receiving_tds"].fillna(0)
     scorers = weekly[tds > 0]["player_display_name"].tolist()
