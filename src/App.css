@@ -420,7 +420,12 @@ body {
   padding: 6px 10px;
   text-align: center;
   white-space: nowrap;
-  min-width: 62px;
+  min-width: 150px;
+}
+
+.season-grid .corner,
+.season-grid .row-label {
+  min-width: 90px;
 }
 
 .season-grid th {

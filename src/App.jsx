@@ -62,12 +62,6 @@ function normalizeOdds(rows) {
   return normalized.slice(0, BOARD_LIMIT);
 }
 
-function shortName(fullName) {
-  const parts = fullName.trim().split(" ");
-  if (parts.length === 1) return parts[0];
-  return `${parts[0][0]}. ${parts[parts.length - 1]}`;
-}
-
 function ResultBadge({ result }) {
   return <span className={`badge badge-${result}`}>{result}</span>;
 }
@@ -348,7 +342,7 @@ export default function App() {
                           className={`grid-cell ${pick ? `grid-${pick.result}` : ""}`}
                           title={pick ? pick.player : "No pick"}
                         >
-                          {pick ? shortName(pick.player) : "—"}
+                          {pick ? pick.player : "—"}
                         </td>
                       );
                     })}
