@@ -83,13 +83,12 @@ body {
   color: var(--paper);
 }
 
-.week-select input {
-  width: 52px;
+.week-select select {
   background: var(--paper);
   color: var(--ink);
   border: 2px solid var(--gold);
   border-radius: 3px;
-  padding: 4px 6px;
+  padding: 4px 8px;
   font-family: "Courier Prime", monospace;
   font-size: 15px;
   text-align: center;

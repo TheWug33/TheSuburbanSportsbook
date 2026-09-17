@@ -162,13 +162,16 @@ export default function App() {
           <h1>The Suburban Sportsbook</h1>
           <label className="week-select">
             Week
-            <input
-              type="number"
-              min="1"
-              max={TOTAL_WEEKS}
+            <select
               value={week}
-              onChange={(e) => setWeek(Number(e.target.value) || 1)}
-            />
+              onChange={(e) => setWeek(Number(e.target.value))}
+            >
+              {weekNumbers.map((w) => (
+                <option key={w} value={w}>
+                  {w}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
         <p className="masthead-sub">Five picks, one week, anytime TD or bust.</p>
