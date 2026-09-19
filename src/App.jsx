@@ -78,6 +78,12 @@ function normalizeOdds(rows) {
   return normalized.slice(0, BOARD_LIMIT);
 }
 
+function formatMoney(n) {
+  if (n > 0) return `+$${n}`;
+  if (n < 0) return `-$${Math.abs(n)}`;
+  return "$0";
+}
+
 function ResultBadge({ result }) {
   return <span className={`badge badge-${result}`}>{result}</span>;
 }
@@ -87,6 +93,7 @@ export default function App() {
   const [week, setWeek] = useState(1);
   const [picks, setPicks] = useState([]);
   const [votes, setVotes] = useState([]);
+  const [finances, setFinances] = useState([]);
   const [weekOdds, setWeekOdds] = useState([]);
   const [allPlayerNames, setAllPlayerNames] = useState([]);
   const [name, setName] = useState(PEOPLE[0]);
@@ -113,6 +120,15 @@ export default function App() {
     setVotes(data || []);
   }, []);
 
+  const loadFinances = useCallback(async () => {
+    const { data, error: err } = await supabase.from("finances").select("*");
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    setFinances(data || []);
+  }, []);
+
   const loadWeekOdds = useCallback(async (w) => {
     const { data, error: err } = await supabase
       .from("td_odds")
@@ -131,8 +147,8 @@ export default function App() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([loadPicks(), loadWeekOdds(week), loadVotes()]).finally(() =>
-      setLoading(false)
+    Promise.all([loadPicks(), loadWeekOdds(week), loadVotes(), loadFinances()]).finally(
+      () => setLoading(false)
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [week]);
@@ -150,6 +166,20 @@ export default function App() {
     });
     return Object.entries(tally).sort((a, b) => b[1].hits - a[1].hits);
   }, [picks]);
+
+  const balances = useMemo(() => {
+    const bal = {};
+    PEOPLE.forEach((p) => (bal[p] = 0));
+    finances.forEach((f) => {
+      bal[f.person] = Number(f.balance);
+    });
+    return bal;
+  }, [finances]);
+
+  const groupNet = useMemo(
+    () => Object.values(balances).reduce((sum, n) => sum + n, 0),
+    [balances]
+  );
 
   const weekNumbers = Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1);
 
@@ -394,6 +424,36 @@ export default function App() {
 
       {activeTab === "season" && (
         <section className="log">
+          <div className="finances">
+            <div className="finances-header">
+              <span>Finances</span>
+              <span className={groupNet < 0 ? "group-net-neg" : "group-net"}>
+                Group net: {formatMoney(groupNet)}
+              </span>
+            </div>
+            <table className="finances-table">
+              <tbody>
+                {PEOPLE.map((person) => (
+                  <tr key={person}>
+                    <td>{person}</td>
+                    <td
+                      className={
+                        balances[person] < 0
+                          ? "balance-neg"
+                          : balances[person] > 0
+                          ? "balance-pos"
+                          : "balance-zero"
+                      }
+                    >
+                      {formatMoney(balances[person])}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="finances-note">Updated manually after each week's parlay settles</p>
+          </div>
+
           <table className="standings">
             <thead>
               <tr>
