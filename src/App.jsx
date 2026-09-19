@@ -176,10 +176,10 @@ export default function App() {
     return bal;
   }, [finances]);
 
-  const groupNet = useMemo(
-    () => Object.values(balances).reduce((sum, n) => sum + n, 0),
-    [balances]
-  );
+  const groupNet = useMemo(() => {
+    const groupRow = finances.find((f) => f.person === "Group");
+    return groupRow ? Number(groupRow.balance) : 0;
+  }, [finances]);
 
   const weekNumbers = Array.from({ length: TOTAL_WEEKS }, (_, i) => i + 1);
 
