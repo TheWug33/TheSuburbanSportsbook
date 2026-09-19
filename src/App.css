@@ -223,6 +223,44 @@ body {
   margin: -6px 0 4px;
 }
 
+.vote-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vote-btn {
+  font-family: "Courier Prime", monospace;
+  font-size: 12px;
+  background: #fff;
+  border: 1px solid var(--paper-line);
+  border-radius: 4px;
+  padding: 3px 6px;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.vote-up-active {
+  background: var(--hit-bg);
+  border-color: var(--hit);
+  color: var(--hit);
+}
+
+.vote-down-active {
+  background: var(--miss-bg);
+  border-color: var(--miss);
+  color: var(--miss);
+}
+
+.vote-badge {
+  font-size: 14px;
+}
+
+.vote-self {
+  color: var(--pending);
+  font-size: 12px;
+}
+
 .ledger {
   width: 100%;
   border-collapse: collapse;

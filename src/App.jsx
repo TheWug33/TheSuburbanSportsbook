@@ -48,6 +48,22 @@ const TABS = [
 
 const BOARD_LIMIT = 15;
 
+// Anonymous per-device voter ID — not tied to any of the five names,
+// so nobody (including someone poking around in Supabase directly)
+// can trace a vote back to a person. Generated once, kept in
+// localStorage so the same device can still toggle its own vote.
+function getVoterId() {
+  const key = "td-parlay-voter-id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id =
+      crypto.randomUUID?.() ??
+      `v-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
 function normalizeOdds(rows) {
   // DB rows already store a descriptive matchup string in `opp`
   // (e.g. "Buffalo Bills @ Houston Texans"). Fallback rows instead
@@ -70,9 +86,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("enter");
   const [week, setWeek] = useState(1);
   const [picks, setPicks] = useState([]);
+  const [votes, setVotes] = useState([]);
   const [weekOdds, setWeekOdds] = useState([]);
   const [allPlayerNames, setAllPlayerNames] = useState([]);
   const [name, setName] = useState(PEOPLE[0]);
+  const [voterId] = useState(getVoterId);
   const [player, setPlayer] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -84,6 +102,15 @@ export default function App() {
       return;
     }
     setPicks(data || []);
+  }, []);
+
+  const loadVotes = useCallback(async () => {
+    const { data, error: err } = await supabase.from("votes").select("*");
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    setVotes(data || []);
   }, []);
 
   const loadWeekOdds = useCallback(async (w) => {
@@ -104,7 +131,9 @@ export default function App() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([loadPicks(), loadWeekOdds(week)]).finally(() => setLoading(false));
+    Promise.all([loadPicks(), loadWeekOdds(week), loadVotes()]).finally(() =>
+      setLoading(false)
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [week]);
 
@@ -153,6 +182,39 @@ export default function App() {
     }
     setPlayer("");
     loadPicks();
+  }
+
+  async function castVote(pickId, voteValue) {
+    const existing = votes.find(
+      (v) => v.pick_id === pickId && v.voter === voterId
+    );
+    if (existing && existing.vote === voteValue) {
+      // Same button tapped again: remove the vote.
+      const { error: err } = await supabase
+        .from("votes")
+        .delete()
+        .eq("pick_id", pickId)
+        .eq("voter", voterId);
+      if (err) setError(err.message);
+      else loadVotes();
+      return;
+    }
+    const { error: err } = await supabase
+      .from("votes")
+      .upsert(
+        { pick_id: pickId, voter: voterId, vote: voteValue },
+        { onConflict: "pick_id,voter" }
+      );
+    if (err) setError(err.message);
+    else loadVotes();
+  }
+
+  function voteSummary(pickId) {
+    const forThisPick = votes.filter((v) => v.pick_id === pickId);
+    const up = forThisPick.filter((v) => v.vote === "up").length;
+    const down = forThisPick.filter((v) => v.vote === "down").length;
+    const mine = forThisPick.find((v) => v.voter === voterId)?.vote;
+    return { up, down, mine };
   }
 
   return (
@@ -258,18 +320,48 @@ export default function App() {
                   <th>Name</th>
                   <th>Player</th>
                   <th>Result</th>
+                  <th>Votes</th>
                 </tr>
               </thead>
               <tbody>
-                {thisWeekPicks.map((p) => (
-                  <tr key={p.person}>
-                    <td>{p.person}</td>
-                    <td>{p.player}</td>
-                    <td>
-                      <ResultBadge result={p.result} />
-                    </td>
-                  </tr>
-                ))}
+                {thisWeekPicks.map((p) => {
+                  const { up, down, mine } = voteSummary(p.id);
+                  const net = up - down;
+                  const badge =
+                    net > 0 ? "🔥" : net < 0 ? "🧊" : null;
+                  return (
+                    <tr key={p.person}>
+                      <td>{p.person}</td>
+                      <td>{p.player}</td>
+                      <td>
+                        <ResultBadge result={p.result} />
+                      </td>
+                      <td>
+                        {p.person === name ? (
+                          <span className="vote-self">—</span>
+                        ) : (
+                          <div className="vote-buttons">
+                            <button
+                              className={mine === "up" ? "vote-btn vote-up-active" : "vote-btn"}
+                              onClick={() => castVote(p.id, "up")}
+                              aria-label="Thumbs up"
+                            >
+                              👍 {up}
+                            </button>
+                            <button
+                              className={mine === "down" ? "vote-btn vote-down-active" : "vote-btn"}
+                              onClick={() => castVote(p.id, "down")}
+                              aria-label="Thumbs down"
+                            >
+                              👎 {down}
+                            </button>
+                            {badge && <span className="vote-badge">{badge}</span>}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
