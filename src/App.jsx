@@ -428,7 +428,7 @@ export default function App() {
             <div className="finances-header">
               <span>Finances</span>
               <span className={groupNet < 0 ? "group-net-neg" : "group-net"}>
-                Group net: {formatMoney(groupNet)}
+                Group winnings: {formatMoney(groupNet)}
               </span>
             </div>
             <table className="finances-table">
