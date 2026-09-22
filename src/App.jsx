@@ -72,7 +72,7 @@ function normalizeOdds(rows) {
     player: o.player,
     matchup: o.team ? `${o.team} vs ${o.opp}` : o.opp,
     odds: o.odds,
-    note: o.manual_note || o.note,
+    note: o.manual_note ? `${o.note} — ${o.manual_note}` : o.note,
   }));
   normalized.sort((a, b) => parseInt(a.odds, 10) - parseInt(b.odds, 10));
   return normalized.slice(0, BOARD_LIMIT);
